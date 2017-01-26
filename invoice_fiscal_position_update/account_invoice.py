@@ -28,33 +28,33 @@ from openerp import models, api, _
 class account_invoice(models.Model):
     _inherit = "account.invoice"
 
-    @api.onchange('fiscal_position')
+    @api.onchange('fiscal_position_id')
     def fiscal_position_change(self):
         """Updates taxes and accounts on all invoice lines"""
         self.ensure_one()
         res = {}
         lines_without_product = []
-        fp = self.fiscal_position
+        fp = self.fiscal_position_id
         inv_type = self.type
-        for line in self.invoice_line:
+        for line in self.invoice_line_ids:
             if line.product_id:
                 product = line.product_id
                 if inv_type in ('out_invoice', 'out_refund'):
                     account = (
-                        product.property_account_income or
-                        product.categ_id.property_account_income_categ)
+                        product.property_account_income_id or
+                        product.categ_id.property_account_income_categ_id)
                     taxes = product.taxes_id
                 else:
                     account = (
-                        product.property_account_expense or
-                        product.categ_id.property_account_expense_categ)
+                        product.property_account_expense_id or
+                        product.categ_id.property_account_expense_categ_id)
                     taxes = product.supplier_taxes_id
                 taxes = taxes or account.tax_ids
                 if fp:
                     account = fp.map_account(account)
                     taxes = fp.map_tax(taxes)
 
-                line.invoice_line_tax_id = [(6, 0, taxes.ids)]
+                line.invoice_line_tax_ids = [(6, 0, taxes.ids)]
                 line.account_id = account.id
             else:
                 lines_without_product.append(line.name)
